@@ -55,7 +55,7 @@ testAsyncMulti("livedata - basic method invocation", [
 
     if (Meteor.is_client) {
       // On client, with no callback, just returns undefined
-      var ret = Meteor.call("unknown method");
+      var ret = Meteor.call("unknown method", expect(failure(test, 404)));
       test.equal(ret, undefined);
     }
 
@@ -72,7 +72,7 @@ testAsyncMulti("livedata - basic method invocation", [
     if (Meteor.is_server)
       test.equal(Meteor.call("nothing"), undefined);
     if (Meteor.is_client)
-      test.equal(Meteor.call("nothing"), undefined);
+      test.equal(Meteor.call("nothing", expect(undefined, undefined)), undefined);
 
     test.equal(Meteor.call("nothing", expect(undefined, undefined)), undefined);
   },
@@ -81,7 +81,7 @@ testAsyncMulti("livedata - basic method invocation", [
     if (Meteor.is_server)
       test.equal(Meteor.call("echo"), []);
     if (Meteor.is_client)
-      test.equal(Meteor.call("echo"), undefined);
+      test.equal(Meteor.call("echo", expect(undefined, [])), undefined);
 
     test.equal(Meteor.call("echo", expect(undefined, [])), undefined);
   },
@@ -90,7 +90,7 @@ testAsyncMulti("livedata - basic method invocation", [
     if (Meteor.is_server)
       test.equal(Meteor.call("echo", 12), [12]);
     if (Meteor.is_client)
-      test.equal(Meteor.call("echo", 12), undefined);
+      test.equal(Meteor.call("echo", 12, expect(undefined, [12])), undefined);
 
     test.equal(Meteor.call("echo", 12, expect(undefined, [12])), undefined);
   },
@@ -99,7 +99,7 @@ testAsyncMulti("livedata - basic method invocation", [
     if (Meteor.is_server)
       test.equal(Meteor.call("echo", 12, {x: 13}), [12, {x: 13}]);
     if (Meteor.is_client)
-      test.equal(Meteor.call("echo", 12, {x: 13}), undefined);
+      test.equal(Meteor.call("echo", 12, {x: 13}, expect(undefined, [12, {x: 13}])), undefined);
 
     test.equal(Meteor.call("echo", 12, {x: 13},
                            expect(undefined, [12, {x: 13}])), undefined);
@@ -116,16 +116,13 @@ testAsyncMulti("livedata - basic method invocation", [
         Meteor.call("exception", "server");
       });
       // No exception, because no code will run on the client
-      test.equal(Meteor.call("exception", "client"), undefined);
+      test.equal(Meteor.call("exception", "client", expect(function() {})), undefined);
     }
 
     if (Meteor.is_client) {
-      // The client exception is thrown away because it's in the
-      // stub. The server exception is throw away because we didn't
-      // give a callback.
-      test.equal(Meteor.call("exception", "both"), undefined);
-      test.equal(Meteor.call("exception", "server"), undefined);
-      test.equal(Meteor.call("exception", "client"), undefined);
+      test.equal(Meteor.call("exception", "both", expect(failure(test, 500))), undefined);
+      test.equal(Meteor.call("exception", "server", expect(failure(test, 500))), undefined);
+      test.equal(Meteor.call("exception", "client", expect(undefined, undefined)), undefined);
     }
 
     // With callback
@@ -139,7 +136,7 @@ testAsyncMulti("livedata - basic method invocation", [
         Meteor.call("exception", "server",
                     expect(failure(test, 500, "Internal server error"))),
         undefined);
-      test.equal(Meteor.call("exception", "client"), undefined);
+      test.equal(Meteor.call("exception", "client", expect(undefined, undefined)), undefined);
     }
 
     if (Meteor.is_server) {
@@ -191,37 +188,30 @@ var checkBalances = function (test, a, b) {
   test.equal(bob.balance, b);
 }
 
-var onQuiesce = function (f) {
-  if (Meteor.is_server)
-    f();
-  else
-    Meteor.default_connection.onQuiesce(f);
-};
-
 // would be nice to have a database-aware test harness of some kind --
 // this is a big hack (and XXX pollutes the global test namespace)
 testAsyncMulti("livedata - compound methods", [
-  function (test) {
+  function (test, expect) {
+    Ledger.insert({name: "alice", balance: 100, world: test.runId()}, expect(function() {}));
+    Ledger.insert({name: "bob", balance: 50, world: test.runId()}, expect(function() {}));
+
     if (Meteor.is_client)
-      Meteor.subscribe("ledger", test.runId());
-    Ledger.insert({name: "alice", balance: 100, world: test.runId()});
-    Ledger.insert({name: "bob", balance: 50, world: test.runId()});
+      Meteor.subscribe("ledger", test.runId(), expect());
   },
   function (test, expect) {
     Meteor.call('ledger/transfer', test.runId(), "alice", "bob", 10,
-                expect(undefined, undefined));
+                expect(function () {
+                  checkBalances(test, 90, 60);
+                }));
 
     checkBalances(test, 90, 60);
-
-    var release = expect();
-    onQuiesce(function () {
-      checkBalances(test, 90, 60);
-      Tinytest.defer(release);
-    });
   },
   function (test, expect) {
     Meteor.call('ledger/transfer', test.runId(), "alice", "bob", 100, true,
-                expect(failure(test, 409)));
+                expect(function(error, result) {
+                  failure(test, 409)(error, result);
+                  checkBalances(test, 90, 60);
+                }));
 
     if (Meteor.is_client)
       // client can fool itself by cheating, but only until the sync
@@ -229,12 +219,6 @@ testAsyncMulti("livedata - compound methods", [
       checkBalances(test, -10, 160);
     else
       checkBalances(test, 90, 60);
-
-    var release = expect();
-    onQuiesce(function () {
-      checkBalances(test, 90, 60);
-      Tinytest.defer(release);
-    });
   }
 ]);
 
