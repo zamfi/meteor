@@ -26,24 +26,17 @@ Meteor._runTestsEverywhere = function (onReport, onComplete) {
   });
 
   Meteor.default_connection.onQuiesce(function () {
-    // XXX use _.defer to avoid calling into minimongo
-    // reentrantly. we need to handle this better..
-    // (XXX code got refactored -- still necessary?)
-    _.defer(function () {
-      // XXX this is a really sloppy way to GC the test results
+    // XXX huge mess. have to use onQuiesce (supposed to be
+    // private/for testing only) because otherwise we might start
+    // removing the results before they've actually all arrived at
+    // the client, since methods can complete before subs
+    // update. or, could use the complete:true hack from before..
+    Meteor._ServerTestResults.remove({run_id: run_id});
 
-      // XXX huge mess. have to use onQuiesce (supposed to be
-      // private/for testing only) because otherwise we might start
-      // removing the results before they've actually all arrived at
-      // the client, since methods can complete before subs
-      // update. or, could use the complete:true hack from before..
-      Meteor._ServerTestResults.remove({run_id: run_id});
-
-      // and of course we shouldn't print "All tests pass!"
-      // until we have actually received the test results :)
-      remote_complete = true;
-      maybeDone();
-    });
+    // and of course we shouldn't print "All tests pass!"
+    // until we have actually received the test results :)
+    remote_complete = true;
+    maybeDone();
   });
 
   var sub_handle = Meteor.subscribe('tinytest/results', run_id);

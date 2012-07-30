@@ -374,6 +374,11 @@ _.extend(Meteor._LivedataConnection.prototype, {
     return self.stream.reconnect();
   },
 
+  // PRIVATE, AND PERHAPS DEPRECATED? Using this callback in tests
+  // breaks isolation between tests and (almost?) always means you
+  // forgot to expect() some async callback.
+  //
+  // Old comment:
   // PRIVATE: called when we are up-to-date with the server. intended
   // for use only in tests. currently, you are very limited in what
   // you may do inside your callback -- in particular, don't do
