@@ -24,13 +24,20 @@
     scope = _.union(scope, requiredScope);
     var flatScope = _.map(scope, encodeURIComponent).join('+');
 
+    // Let's always write out online vs offline in mongo to keep track.
+    var access_type = = config.access_type.value;
+     if (!access_type) {
+        access_type = 'online'
+     }
+
     var loginUrl =
           'https://accounts.google.com/o/oauth2/auth' +
           '?response_type=code' +
           '&client_id=' + config.clientId +
           '&scope=' + flatScope +
           '&redirect_uri=' + Meteor.absoluteUrl('_oauth/google?close') +
-          '&state=' + state;
+          '&state=' + state +
+          '&access_type=' + access_type;
 
     Accounts.oauth.initiateLogin(state, loginUrl, callback);
   };
