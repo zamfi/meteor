@@ -19,16 +19,14 @@
     var scope = ['https://www.googleapis.com/auth/userinfo.email'];
     if (options && options.requestPermissions)
       scope = options.requestPermissions;
-    // Might be good to have a way to set access_type=offline. Need to
-    // both set it here and store the refresh token on the server.
     scope = _.union(scope, requiredScope);
     var flatScope = _.map(scope, encodeURIComponent).join('+');
 
     // Let's always write out online vs offline in mongo to keep track.
-    var access_type = = config.access_type.value;
-     if (!access_type) {
-        access_type = 'online'
-     }
+    var accessType = config.access_type.value;
+    if (!accessType) {
+      accessType = 'online';
+    }
 
     var loginUrl =
           'https://accounts.google.com/o/oauth2/auth' +
@@ -37,7 +35,7 @@
           '&scope=' + flatScope +
           '&redirect_uri=' + Meteor.absoluteUrl('_oauth/google?close') +
           '&state=' + state +
-          '&access_type=' + access_type;
+          '&access_type=' + accessType;
 
     Accounts.oauth.initiateLogin(state, loginUrl, callback);
   };
