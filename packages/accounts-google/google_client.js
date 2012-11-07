@@ -22,11 +22,10 @@
     scope = _.union(scope, requiredScope);
     var flatScope = _.map(scope, encodeURIComponent).join('+');
 
-    // Let's always write out online vs offline in mongo to keep track.
-    var access_type = config.accessType;
-     if (!access_type) {
-        access_type = 'online'
-     }
+    var accessType = config.accessType;
+    if (!accessType) {
+      accessType = 'online';
+    }
 
     var loginUrl =
           'https://accounts.google.com/o/oauth2/auth' +
