@@ -2,30 +2,30 @@
 
   Accounts.oauth.registerService('google', 2, function(query) {
 
-    var response = getAccessToken(query);
+    var response = getTokens(query);
     var accessToken = response.access_token;
     var refreshToken = response.refresh_token;
     var identity = getIdentity(accessToken);
 
     if (!refreshToken) {
-
-        // Not all responses will include a refresh token, and we don't want to override an existing one with a null
-        // value if we actually already have one.
-        refreshToken = getRefreshToken(identity.id);
+      // Not all responses will include a refresh token, and we don't want to override an existing one with a null
+      // value if we actually already have one.
+      refreshToken = getRefreshToken(identity.id);
     }
 
     return {
-                serviceData: {
-                  id: identity.id,
-                  accessToken: accessToken,
-                  refreshToken: refreshToken,
-                  email: identity.email
-                },
-                options: {profile: {name: identity.name}}
-           };
+      serviceData: {
+        id: identity.id,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        email: identity.email
+      },
+      options: {profile: {name: identity.name}}
+    };
   });
 
-  var getAccessToken = function (query) {
+  // returns an object containig at least {access_token: ..., refresh_token: ...}
+  var getTokens = function (query) {
     var config = Accounts.loginServiceConfiguration.findOne({service: 'google'});
     if (!config)
       throw new Accounts.ConfigError("Service not configured");
