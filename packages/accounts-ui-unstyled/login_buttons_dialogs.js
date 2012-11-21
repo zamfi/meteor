@@ -162,10 +162,20 @@
         var configuration = {
           service: serviceName
         };
+
+        // Fetch the value of each field, dealing with different types
+        // of fields appropraitely
         _.each(configurationFields(), function(field) {
-          configuration[field.property] = document.getElementById(
-            'configure-login-service-dialog-' + field.property).value
-            .replace(/^\s*|\s*$/g, ""); // trim;
+          var element = document.getElementById(
+            'configure-login-service-dialog-' + field.property);
+
+          var value;
+          if (field.type === 'checkbox')
+            value = element.checked;
+          else
+            value = element.value.replace(/^\s*|\s*$/g, ""); // trim;
+
+          configuration[field.property] = value;
         });
 
         // Configure this login service
@@ -229,6 +239,9 @@
     return loginButtonsSession.get('configureLoginServiceDialogSaveDisabled');
   };
 
+  Template._configureLoginServiceDialog.type = function () {
+    return this.type || 'text';
+  };
 
   // XXX from http://epeli.github.com/underscore.string/lib/underscore.string.js
   var capitalize = function(str){

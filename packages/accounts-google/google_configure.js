@@ -6,6 +6,6 @@ Template.configureLoginServiceDialogForGoogle.fields = function () {
   return [
     {property: 'clientId', label: 'Client ID'},
     {property: 'secret', label: 'Client secret'},
-    {property: 'accessType', label: 'Access type (online or offline)'}
+    {property: 'offlineAccess', label: 'Offline access?', type: 'checkbox'}
   ];
 };
