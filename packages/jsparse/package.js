@@ -1,19 +1,18 @@
 Package.describe({
   summary: "Full-featured JavaScript parser",
-  version: "1.0.10"
+  internal: true
 });
 
-Package.onUse(function (api) {
-  api.export(['JSLexer', 'JSParser', 'ParseNode']);
-  api.addFiles(['lexer.js', 'parserlib.js', 'stringify.js', 'parser.js'],
+Package.on_use(function (api) {
+  api.add_files(['lexer.js', 'parserlib.js', 'stringify.js', 'parser.js'],
                 ['client', 'server']);
 });
 
-Package.onTest(function (api) {
-  api.use(['tinytest', 'underscore']);
+Package.on_test(function (api) {
+  api.use('tinytest');
   api.use('jsparse', 'client');
 
-  api.addFiles('parser_tests.js',
+  api.add_files('parser_tests.js',
                 // Test just on client for faster running; should run
                 // identically on server.
                 'client');

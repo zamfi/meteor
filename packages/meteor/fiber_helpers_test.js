@@ -1,5 +1,3 @@
-var Fiber = Npm.require('fibers');
-
 Tinytest.add("fibers - synchronous queue", function (test) {
   var q = new Meteor._SynchronousQueue;
   var output = [];
@@ -9,11 +7,7 @@ Tinytest.add("fibers - synchronous queue", function (test) {
     };
   };
   var outputIsUpTo = function (n) {
-    var range = [];
-    for (var i = 1; i <= n; ++i) {
-      range.push(i);
-    }
-    test.equal(output, range);
+    test.equal(output, _.range(1, n+1));
   };
 
   // Queue a task. It cannot run until we yield.
@@ -61,7 +55,6 @@ Tinytest.add("fibers - synchronous queue", function (test) {
   outputIsUpTo(7);
 
   // Run a task that throws. It should throw from runTask.
-  Meteor._suppress_log(1);
   test.throws(function () {
     q.runTask(function () {
       throw new Error("this is thrown");

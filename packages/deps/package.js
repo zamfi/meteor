@@ -1,19 +1,19 @@
 // XXX rename package?
 
 Package.describe({
-  summary: "Deprecated: Use the 'tracker' package instead.",
-  version: '1.0.12'
+  summary: "Dependency mananger to allow reactive callbacks",
+  internal: true
 });
 
-Package.onUse(function (api) {
-  api.use('tracker');
-  api.imply('tracker');
+Package.on_use(function (api, where) {
+  where = where || ['client', 'server'];
 
-  // XXX COMPAT WITH PACKAGES BUILT FOR 0.9.0.
-  //
-  // (in particular, packages that have a weak dependency on this
-  // package, since then exported symbols live on the
-  // `Package.deps` object)
-  api.export('Tracker');
-  api.export('Deps');
+  api.use('underscore', where);
+  api.add_files(['deps.js', 'deps-utils.js'], where);
+});
+
+Package.on_test(function (api) {
+  api.use('tinytest');
+  api.use('deps');
+  api.add_files('deps_tests.js', 'client');
 });

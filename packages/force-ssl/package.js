@@ -1,19 +1,15 @@
 Package.describe({
-  summary: "Require this application to use HTTPS",
-  version: "1.1.0",
-  prodOnly: true
+  summary: "Require this application to use secure transport (HTTPS)"
 });
 
-Package.onUse(function (api) {
-  api.use('ecmascript');
-  api.use('webapp', 'server');
+Package.on_use(function (api) {
+  api.use('underscore', 'server');
   // make sure we come after livedata, so we load after the sockjs
   // server has been instantiated.
-  api.use('ddp', 'server');
-  api.use('force-ssl-common', 'server');
+  api.use('livedata', 'server');
 
-  api.mainModule('force_ssl_both.js', ['client', 'server']);
-  api.mainModule('force_ssl_server.js', 'server');
+  api.add_files('force_ssl_common.js', ['client', 'server']);
+  api.add_files('force_ssl_server.js', 'server');
 
   // Another thing we could do is add a force_ssl_client.js file that
   // makes sure document.location.protocol is 'https'. If it detected

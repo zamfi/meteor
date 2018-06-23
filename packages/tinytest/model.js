@@ -1,5 +1,2 @@
-export const ServerTestResultsSubscription =
-  "tinytest_results_subscription";
-
-export const ServerTestResultsCollection =
-  "tinytest_results_collection";
+Meteor._ServerTestResultsSubscription = 'tinytest_results_subscription';
+Meteor._ServerTestResultsCollection = 'tinytest_results_collection';

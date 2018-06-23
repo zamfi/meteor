@@ -1,15 +1,9 @@
 Package.describe({
   summary: "Reload the page while preserving application state.",
-  version: '1.2.0'
+  internal: true
 });
 
-Package.onUse(function (api) {
-  api.use('ecmascript');
-  api.mainModule('reload.js', 'client');
-  api.export('Reload', 'client');
-});
-
-Package.onTest(function (api) {
-  api.use(['tinytest', 'reload'], 'client');
-  api.addFiles('reload_tests.js', 'client');
+Package.on_use(function (api) {
+  api.use(['underscore', 'logging', 'json'], 'client');
+  api.add_files('reload.js', 'client');
 });

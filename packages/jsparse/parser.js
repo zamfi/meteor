@@ -4,6 +4,8 @@
 //  - object literal trailing comma
 //  - object literal get/set
 
+(function () {
+
 var expecting = Parser.expecting;
 
 var assertion = Parsers.assertion;
@@ -68,8 +70,7 @@ JSParser.prototype.consumeNewToken = function () {
   do {
     lex = lexer.next();
     if (lex.isError())
-      throw new Error("Bad token at " +
-                      JSLexer.prettyOffset(lexer.code, lex.startPos()) +
+      throw new Error("Bad token at position " + lex.startPos() +
                       ", text `" + lex.text() + "`");
     else if (lex.type() === "NEWLINE")
       self.isLineTerminatorHere = true;
@@ -88,7 +89,7 @@ JSParser.prototype.getParseError = function (expecting, found) {
   if (this.oldToken)
     msg += " after " + this.oldToken;
   var pos = this.pos;
-  msg += " at " + JSLexer.prettyOffset(this.lexer.code, pos);
+  msg += " at position " + pos;
   msg += ", found " + (found || this.newToken);
   return new Error(msg);
 };
@@ -232,42 +233,21 @@ JSParser.prototype.getSyntaxTree = function () {
                      list(token(',')))),
                  token(']')));
 
-  // "IdentifierName" in ES5 allows reserved words, like in a property access
-  // or a key of an object literal.
-  // Put IDENTIFIER last so it shows up in the error message.
-  var identifierName = or(tokenType('NULL'), tokenType('BOOLEAN'),
-                          tokenType('KEYWORD'), tokenType('IDENTIFIER'));
-
   var propertyName = expecting('propertyName', or(
-    node('idPropName', identifierName),
+    node('idPropName', tokenType('IDENTIFIER')),
     node('numPropName', tokenType('NUMBER')),
     node('strPropName', tokenType('STRING'))));
   var nameColonValue = expecting(
     'propertyName',
     node('prop', seq(propertyName, token(':'), assignmentExpression)));
 
-  // Allow trailing comma in object literal, per ES5.  Trailing comma
-  // must follow a `name:value`, that is, `{,}` is invalid.
-  //
-  // We can't just use a normal comma list(), because it will seize
-  // on the comma as a sign that the list continues.  Instead,
-  // we specify a list of either ',' or nameColonValue, using positive
-  // and negative lookAheads to constrain the sequence.  The grammar
-  // is ordered so that error messages will always say
-  // "Expected propertyName" or "Expected ," as appropriate, not
-  // "Expected ," when the look-ahead is negative or "Expected }".
   var objectLiteral =
         node('object',
              seq(token('{'),
                  or(lookAheadToken('}'),
-                    and(not(lookAheadToken(',')),
-                        list(or(seq(token(','),
-                                    expecting('propertyName',
-                                              not(lookAheadToken(',')))),
-                                seq(nameColonValue,
-                                    or(lookAheadToken('}'),
-                                       lookAheadToken(','))))))),
-                 expecting('propertyName', token('}'))));
+                    list(nameColonValue,
+                         token(','))),
+                 token('}')));
 
   var functionMaybeNameRequired = booleanFlaggedParser(
     function (nameRequired) {
@@ -301,8 +281,7 @@ JSParser.prototype.getSyntaxTree = function () {
                      objectLiteral,
                      functionExpression));
 
-
-  var dotEnding = seq(token('.'), identifierName);
+  var dotEnding = seq(token('.'), tokenType('IDENTIFIER'));
   var bracketEnding = seq(token('['), expression, token(']'));
   var callArgs = seq(token('('),
                      or(lookAheadToken(')'),
@@ -836,3 +815,5 @@ JSParser.prototype.getSyntaxTree = function () {
 
   return program.parse(this);
 };
+
+})();

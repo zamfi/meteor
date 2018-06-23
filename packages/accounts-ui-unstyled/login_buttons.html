@@ -1,8 +1,14 @@
-<template name="loginButtons">
+<!--
+    NOTE: You shouldn't use these templates directly. Instead, use the global
+    {{loginButtons}} template. For positioning on the right side of your app,
+    try {{loginButtons align="right"}}
+  -->
+
+<template name="_loginButtons">
   <div id="login-buttons" class="login-buttons-dropdown-align-{{align}}">
     {{#if currentUser}}
-      {{#if loggingInOrOut}}
-        {{! We aren't actually logged in/out yet; we're just setting Meteor.userId
+      {{#if loggingIn}}
+        {{! We aren't actually logged in yet; we're just setting Meteor.userId
             optimistically during an at-startup login-with-token. We expose this
             state so other UIs can treat it specially, but we'll just treat it
             as logged out. }}
@@ -80,6 +86,6 @@
     </div>
   {{else}}
     {{! just add some padding }}
-    <div class="login-buttons-padding"></div>
+    <div class="login-buttons-padding" />
   {{/unless}}
 </template>

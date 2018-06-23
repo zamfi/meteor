@@ -1,9 +1,11 @@
-SeededRandom = function(seed) { // seed may be a string or any type
+
+
+var SeededRandom = function(seed) { // seed may be a string or any type
   if (! (this instanceof SeededRandom))
     return new SeededRandom(seed);
 
   seed = seed || "seed";
-  this.gen = Random.createWithSeeds(seed).alea; // from random.js
+  this.gen = new Meteor._Alea(seed); // from uuid.js
 };
 SeededRandom.prototype.next = function() {
   return this.gen();

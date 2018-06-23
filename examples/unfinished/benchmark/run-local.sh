@@ -1,12 +1,8 @@
-#!/usr/bin/env bash
+#!/bin/bash
 
 PORT=9000
-if [ -z "$NUM_CLIENTS" ]; then
-  NUM_CLIENTS=10
-fi
-if [ -z "$DURATION" ]; then
-  DURATION=120
-fi
+NUM_CLIENTS=10
+DURATION=120
 REPORT_INTERVAL=10
 
 set -e
@@ -16,34 +12,16 @@ PROJDIR=`dirname $0`
 cd "$PROJDIR"
 PROJDIR=`pwd`
 
-SCENARIO="${1:-default}"
-
 # clean up from previous runs
 # XXX this is gross!
 pkill -f "$PROJDIR/.meteor/local/db" || true
 ../../../meteor reset || true
 
 # start the benchmark app
-../../../meteor --production --settings "scenarios/${SCENARIO}.json" --port ${PORT} &
+../../../meteor --production --port 9000 &
 OUTER_PID=$!
 
-echo "Waiting for server to come up"
-function wait_for_port {
-    local N=0
-    while ! curl -v "$1" 2>&1 | grep ' 200 ' > /dev/null ; do
-        sleep 1
-        N=$(($N+1))
-        if [ $N -ge $2 ] ; then
-            curl -v "$1" || true
-            echo "Timed out waiting for port $1"
-            exit 2
-        fi
-    done
-}
-wait_for_port "http://localhost:${PORT}" 60
 
-
-echo "Starting phantoms"
 # start a bunch of phantomjs processes
 PHANTOMSCRIPT=`mktemp -t benchmark-XXXXXXXX`
 cat > "$PHANTOMSCRIPT" <<EOF

@@ -1,4 +1,4 @@
-Timers = new Mongo.Collection(null);
+Timers = new Meteor.Collection(null);
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -53,7 +53,7 @@ if (typeof Session.get("spinForward") !== 'boolean') {
 Template.preserveDemo.preserve([ '.spinner', '.spinforward' ]);
 
 Template.preserveDemo.spinForwardChecked = function () {
-  return Session.get('spinForward') ? 'checked' : '';
+  return Session.get('spinForward') ? 'checked="checked"' : '';
 };
 
 Template.preserveDemo.spinAnim = function () {
@@ -69,7 +69,7 @@ Template.preserveDemo.events({
 ///////////////////////////////////////////////////////////////////////////////
 
 Template.constantDemo.checked = function (which) {
-  return Session.get('mapchecked' + which) ? 'checked' : '';
+  return Session.get('mapchecked' + which) ? 'checked="checked"' : '';
 };
 
 Template.constantDemo.show = function (which) {
@@ -110,13 +110,13 @@ var updateTimer = function (timer) {
     ((timer.elapsed === 1) ? "" : "s");
 };
 
-Template.timer.onCreated(function () {
+Template.timer.created = function () {
   var self = this;
   self.elapsed = 0;
   self.node = null;
-});
+};
 
-Template.timer.onRendered(function () {
+Template.timer.rendered = function () {
   var self = this;
   self.node = this.find(".elapsed");
   updateTimer(self);
@@ -129,11 +129,11 @@ Template.timer.onRendered(function () {
     };
     tick();
   }
-});
+};
 
-Template.timer.onDestroyed(function () {
+Template.timer.destroyed = function () {
   clearInterval(this.timer);
-});
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -150,12 +150,12 @@ Template.circles.events({
     Session.set("selectedCircle:" + this.group, evt.currentTarget.id);
   },
   'click .add': function () {
-    Circles.insert({x: Random.fraction(), y: Random.fraction(),
-                    r: Random.fraction() * .1 + .02,
+    Circles.insert({x: Meteor.random(), y: Meteor.random(),
+                    r: Meteor.random() * .1 + .02,
                     color: {
-                      r: Random.fraction(),
-                      g: Random.fraction(),
-                      b: Random.fraction()
+                      r: Meteor.random(),
+                      g: Meteor.random(),
+                      b: Meteor.random()
                     },
                     group: this.group
                    });
@@ -171,7 +171,7 @@ Template.circles.events({
     Circles.find({group: this.group}).forEach(function (r) {
       Circles.update(r._id, {
         $set: {
-          x: Random.fraction(), y: Random.fraction(), r: Random.fraction() * .1 + .02
+          x: Meteor.random(), y: Meteor.random(), r: Meteor.random() * .1 + .02
         }
       });
     });
@@ -193,13 +193,13 @@ Template.circles.count = function () {
 
 Template.circles.disabled = function () {
   return Session.get("selectedCircle:" + this.group) ?
-    '' : 'disabled';
+    '' : 'disabled="disabled"';
 };
 
-Template.circles.onCreated(function () {
-});
+Template.circles.created = function () {
+};
 
-Template.circles.onRendered(function () {
+Template.circles.rendered = function () {
   var self = this;
   self.node = self.find("svg");
 
@@ -207,7 +207,7 @@ Template.circles.onRendered(function () {
 
   if (! self.handle) {
     d3.select(self.node).append("rect");
-    self.handle = Deps.autorun(function () {
+    self.handle = Meteor.autorun(function () {
       var circle = d3.select(self.node).selectAll("circle")
         .data(Circles.find({group: data.group}).fetch(),
               function (d) { return d._id; });
@@ -266,8 +266,8 @@ Template.circles.onRendered(function () {
         rect.attr("display", 'none');
     });
   }
-});
+};
 
-Template.circles.onDestroyed(function () {
+Template.circles.destroyed = function () {
   this.handle && this.handle.stop();
-});
+};

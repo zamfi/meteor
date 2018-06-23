@@ -1,99 +1,71 @@
-var MAX_LENGTH = 500; // if you change this, also change the appropriate test
-var slice = Array.prototype.slice;
 
-exports.makeErrorByStatus = function(statusCode, content) {
-  var message = "failed [" + statusCode + "]";
+Meteor.http = Meteor.http || {};
 
-  if (content) {
-    var stringContent = typeof content == "string" ?
-      content : content.toString();
+(function() {
 
-    message += ' ' + truncate(stringContent.replace(/\n/g, ' '), MAX_LENGTH);
-  }
+  Meteor.http._encodeParams = function(params) {
+    var buf = [];
+    _.each(params, function(value, key) {
+      if (buf.length)
+        buf.push('&');
+      buf.push(encodeURIComponent(key), '=', encodeURIComponent(value));
+    });
+    return buf.join('').replace(/%20/g, '+');
+  };
 
-  return new Error(message);
-};
+  Meteor.http._buildUrl = function(before_qmark, from_qmark, opt_query, opt_params) {
+    var url_without_query = before_qmark;
+    var query = from_qmark ? from_qmark.slice(1) : null;
 
-function truncate(str, length) {
-  return str.length > length ? str.slice(0, length) + '...' : str;
-}
+    if (typeof opt_query === "string")
+      query = String(opt_query);
 
-// Fill in `response.data` if the content-type is JSON.
-exports.populateData = function(response) {
-  // Read Content-Type header, up to a ';' if there is one.
-  // A typical header might be "application/json; charset=utf-8"
-  // or just "application/json".
-  var contentType = (response.headers['content-type'] || ';').split(';')[0];
+    if (opt_params) {
+      query = query || "";
+      var prms = Meteor.http._encodeParams(opt_params);
+      if (query && prms)
+        query += '&';
+      query += prms;
+    }
 
-  // Only try to parse data as JSON if server sets correct content type.
-  if (['application/json',
-       'text/javascript',
-       'application/javascript',
-       'application/x-javascript',
-      ].indexOf(contentType) >= 0) {
-    try {
-      response.data = JSON.parse(response.content);
-    } catch (err) {
+    var url = url_without_query;
+    if (query !== null)
+      url += ("?"+query);
+
+    return url;
+  };
+
+  // Fill in `response.data` if the content-type is JSON.
+  Meteor.http._populateData = function(response) {
+    // Read Content-Type header, up to a ';' if there is one.
+    // A typical header might be "application/json; charset=utf-8"
+    // or just "application/json".
+    var contentType = (response.headers['content-type'] || ';').split(';')[0];
+
+    // Only try to parse data as JSON if server sets correct content type.
+    if (_.include(['application/json', 'text/javascript'], contentType)) {
+      try {
+        response.data = JSON.parse(response.content);
+      } catch (err) {
+        response.data = null;
+      }
+    } else {
       response.data = null;
     }
-  } else {
-    response.data = null;
-  }
-};
+  };
 
-var HTTP = exports.HTTP = {};
+  Meteor.http.get = function (/* varargs */) {
+    return Meteor.http.call.apply(this, ["GET"].concat(_.toArray(arguments)));
+  };
+  Meteor.http.post = function (/* varargs */) {
+    return Meteor.http.call.apply(this, ["POST"].concat(_.toArray(arguments)));
+  };
+  Meteor.http.put = function (/* varargs */) {
+    return Meteor.http.call.apply(this, ["PUT"].concat(_.toArray(arguments)));
+  };
+  Meteor.http.del = function (/* varargs */) {
+    return Meteor.http.call.apply(this, ["DELETE"].concat(_.toArray(arguments)));
+  };
 
-/**
- * @summary Send an HTTP `GET` request. Equivalent to calling [`HTTP.call`](#http_call) with "GET" as the first argument.
- * @param {String} url The URL to which the request should be sent.
- * @param {Object} [callOptions] Options passed on to [`HTTP.call`](#http_call).
- * @param {Function} [asyncCallback] Callback that is called when the request is completed. Required on the client.
- * @locus Anywhere
- */
-HTTP.get = function (/* varargs */) {
-  return HTTP.call.apply(this, ["GET"].concat(slice.call(arguments)));
-};
 
-/**
- * @summary Send an HTTP `POST` request. Equivalent to calling [`HTTP.call`](#http_call) with "POST" as the first argument.
- * @param {String} url The URL to which the request should be sent.
- * @param {Object} [callOptions] Options passed on to [`HTTP.call`](#http_call).
- * @param {Function} [asyncCallback] Callback that is called when the request is completed. Required on the client.
- * @locus Anywhere
- */
-HTTP.post = function (/* varargs */) {
-  return HTTP.call.apply(this, ["POST"].concat(slice.call(arguments)));
-};
-
-/**
- * @summary Send an HTTP `PUT` request. Equivalent to calling [`HTTP.call`](#http_call) with "PUT" as the first argument.
- * @param {String} url The URL to which the request should be sent.
- * @param {Object} [callOptions] Options passed on to [`HTTP.call`](#http_call).
- * @param {Function} [asyncCallback] Callback that is called when the request is completed. Required on the client.
- * @locus Anywhere
- */
-HTTP.put = function (/* varargs */) {
-  return HTTP.call.apply(this, ["PUT"].concat(slice.call(arguments)));
-};
-
-/**
- * @summary Send an HTTP `DELETE` request. Equivalent to calling [`HTTP.call`](#http_call) with "DELETE" as the first argument. (Named `del` to avoid conflict with the Javascript keyword `delete`)
- * @param {String} url The URL to which the request should be sent.
- * @param {Object} [callOptions] Options passed on to [`HTTP.call`](#http_call).
- * @param {Function} [asyncCallback] Callback that is called when the request is completed. Required on the client.
- * @locus Anywhere
- */
-HTTP.del = function (/* varargs */) {
-  return HTTP.call.apply(this, ["DELETE"].concat(slice.call(arguments)));
-};
-
-/**
- * @summary Send an HTTP `PATCH` request. Equivalent to calling [`HTTP.call`](#http_call) with "PATCH" as the first argument.
- * @param {String} url The URL to which the request should be sent.
- * @param {Object} [callOptions] Options passed on to [`HTTP.call`](#http_call).
- * @param {Function} [asyncCallback] Callback that is called when the request is completed. Required on the client.
- * @locus Anywhere
- */
-HTTP.patch = function (/* varargs */) {
-  return HTTP.call.apply(this, ["PATCH"].concat(slice.call(arguments)));
-};
+})();

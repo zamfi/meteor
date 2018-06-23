@@ -1,20 +1,18 @@
 Package.describe({
-  summary: "Login service for Facebook accounts",
-  version: "1.3.1"
+  summary: "Login service for Facebook accounts"
 });
 
-Package.onUse(function(api) {
-  api.use('ecmascript');
+Package.on_use(function(api) {
   api.use('accounts-base', ['client', 'server']);
-  // Export Accounts (etc) to packages using this one.
-  api.imply('accounts-base', ['client', 'server']);
-  api.use('accounts-oauth', ['client', 'server']);
-  api.use('facebook-oauth');
-  api.imply('facebook-oauth');
+  api.use('accounts-oauth2-helper', ['client', 'server']);
+  api.use('http', ['client', 'server']);
+  api.use('templating', 'client');
 
-  // If users use accounts-ui but not facebook-config-ui, give them a tip.
-  api.use(['accounts-ui', 'facebook-config-ui'], ['client', 'server'], { weak: true });
-  api.addFiles("notice.js");
+  api.add_files(
+    ['facebook_configure.html', 'facebook_configure.js'],
+    'client');
 
-  api.addFiles("facebook.js");
+  api.add_files('facebook_common.js', ['client', 'server']);
+  api.add_files('facebook_server.js', 'server');
+  api.add_files('facebook_client.js', 'client');
 });

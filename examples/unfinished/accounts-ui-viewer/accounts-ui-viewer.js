@@ -26,7 +26,7 @@ if (Meteor.isClient) {
         } else {
           // make sure we have a username
           Meteor.users.update(Meteor.userId(),
-                              { $set: { username: Random.id() }});
+                              { $set: { username: Meteor.uuid() }});
         }
       }
     } else if (key === "signupFields") {
@@ -87,8 +87,18 @@ if (Meteor.isClient) {
   Template.radio.maybeChecked = function () {
     var curValue = Session.get('settings')[this.key];
     if (castValue(this.value) === curValue)
-      return 'checked';
+      return 'checked="checked"';
     return '';
+  };
+
+  Template.page.radio = function (key, value, label) {
+    return new Handlebars.SafeString(
+      Template.radio({key: key, value: value, label: label}));
+  };
+
+  Template.page.button = function (key, value, label) {
+    return new Handlebars.SafeString(
+      Template.button({key: key, value: value, label: label}));
   };
 
   Template.page.match = function (kv) {
@@ -106,7 +116,7 @@ if (Meteor.isClient) {
 
   var fakeLogin = function (callback) {
     Accounts.createUser(
-      {username: Random.id(),
+      {username: Meteor.uuid(),
        password: "password",
        profile: { name: "Joe Schmoe" }},
       function () {
@@ -152,12 +162,12 @@ if (Meteor.isClient) {
     'click #controlpane button': function (event) {
       if (this.key === "fakeConfig") {
         var service = this.value;
-        if (! ServiceConfiguration.configurations.findOne({service: service}))
-          ServiceConfiguration.configurations.insert(
+        if (! Accounts.loginServiceConfiguration.findOne({service: service}))
+          Accounts.loginServiceConfiguration.insert(
             {service: service, fake: true});
       } else if (this.key === "unconfig") {
         var service = this.value;
-        ServiceConfiguration.configurations.remove({service: service});
+        Accounts.loginServiceConfiguration.remove({service: service});
       } else if (this.key === "messages") {
         if (this.value === "error") {
           Accounts._loginButtonsSession.errorMessage('An error occurred!  Gee golly gosh.');

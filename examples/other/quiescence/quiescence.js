@@ -1,17 +1,18 @@
-Time = new Mongo.Collection("time");
-Results = new Mongo.Collection("results");
-Magic = new Mongo.Collection("magic");
+Time = new Meteor.Collection("time");
+Results = new Meteor.Collection("results");
+Magic = new Meteor.Collection("magic");
 
 if (Meteor.isServer) {
   Meteor.publish("time", function () {
     var self = this;
     var publishTime = function () {
       var when = + new Date;
-      self.changed("time", "now", {timestamp: when});
+      self.set("time", "now", {timestamp: when});
+      self.flush();
     };
-    self.added("time", "now", {});
     publishTime();
-    self.ready();
+    self.complete();
+    self.flush();
     var interval = Meteor.setInterval(publishTime, 1000);
     self.onStop(function () {
       Meteor.clearInterval(interval);
@@ -29,8 +30,6 @@ if (Meteor.isServer) {
       Magic.insert({number: 42});
     }
   });
-
-  var Fiber = Npm.require('fibers');
 
   var sleep = function (ms) {
     var fiber = Fiber.current;
@@ -69,7 +68,7 @@ if (Meteor.isServer) {
   };
   Template.updated.events({
     'click #update-button': function () {
-      var num = Math.round(Random.fraction()*100);
+      var num = Math.round(Math.random()*100);
       Meteor.call('setMagic', num);
     }
   });

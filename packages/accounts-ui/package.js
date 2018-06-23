@@ -1,13 +1,10 @@
 Package.describe({
-  summary: "Simple templates to add login widgets to an app",
-  version: "1.3.0"
+  summary: "Simple templates to add login widgets to an app."
 });
 
-Package.onUse(function (api) {
-  // Export Accounts (etc) to packages using this one.
-  api.imply('accounts-base', ['client', 'server']);
+Package.on_use(function (api) {
   api.use('accounts-ui-unstyled', 'client');
-  api.use('less', 'client');
+  api.use('less', 'server');
 
-  api.addFiles(['login_buttons.less'], 'client');
+  api.add_files(['login_buttons.less'], 'client');
 });

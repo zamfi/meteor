@@ -97,23 +97,20 @@
   {{#if inForgotPasswordFlow}}
     {{> _forgotPasswordForm}}
   {{else}}
-    <form class="login-form login-password-form">
+    <div class="login-form login-password-form">
       {{#each fields}}
         {{> _loginButtonsFormField}}
       {{/each}}
 
       {{> _loginButtonsMessages}}
 
-      <button
-        class="login-button login-button-form-submit"
-        id="login-buttons-password"
-      >
+      <div class="login-button login-button-form-submit" id="login-buttons-password">
         {{#if inSignupFlow}}
           Create account
         {{else}}
           Sign in
         {{/if}}
-      </button>
+      </div>
 
       {{#if inLoginFlow}}
         {{#if showCreateAccountLink}}
@@ -132,7 +129,7 @@
       {{#if inSignupFlow}}
         {{> _loginButtonsBackToLoginLink}}
       {{/if}}
-    </form>
+    </div>
   {{/if}}
 </template>
 

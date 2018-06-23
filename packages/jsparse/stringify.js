@@ -1,3 +1,5 @@
+(function() {
+
 // The "tree string" format is a simple format for representing syntax trees.
 //
 // For example, the parse of `x++;` is written as:
@@ -116,3 +118,5 @@ ParseNode.unstringify = function (str) {
 
   return Parsers.seq(item, endOfString).parseRequired(state)[0];
 };
+
+})();
