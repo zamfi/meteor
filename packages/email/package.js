@@ -1,13 +1,21 @@
 Package.describe({
-  summary: "Send email messages"
+  summary: "Send email messages",
+  version: "1.2.3"
 });
 
-Package.on_use(function (api) {
-  api.add_files('email.js', 'server');
+Npm.depends({
+  node4mailer: "4.0.3",
+  "stream-buffers": "0.2.5"
 });
 
-Package.on_test(function (api) {
+Package.onUse(function (api) {
+  api.export(['Email', 'EmailInternals'], 'server');
+  api.export('EmailTest', 'server', {testOnly: true});
+  api.addFiles('email.js', 'server');
+});
+
+Package.onTest(function (api) {
   api.use('email', 'server');
   api.use('tinytest');
-  api.add_files('email_tests.js', 'server');
+  api.addFiles('email_tests.js', 'server');
 });

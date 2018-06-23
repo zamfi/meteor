@@ -1,19 +1,35 @@
 Package.describe({
   summary: "Run tests interactively in the browser",
-  internal: true
+  version: '1.1.1',
+  documentation: null
 });
 
-Package.on_use(function (api) {
-
+Package.onUse(function (api) {
+  api.use('ecmascript');
   // XXX this should go away, and there should be a clean interface
   // that tinytest and the driver both implement?
   api.use('tinytest');
+  api.use('bootstrap@1.0.1');
+  api.use('underscore');
 
-  api.use(['spark', 'livedata', 'templating'], 'client');
+  api.use('session');
+  api.use('reload');
+  api.use('jquery@1.11.1');
 
-  api.add_files([
-    'driver.css',
+  api.use(['webapp', 'blaze@2.1.8', 'templating@1.2.13', 'spacebars@1.0.12',
+           'ddp', 'tracker'], 'client');
+
+  api.addFiles('diff_match_patch_uncompressed.js', 'client');
+
+  api.addFiles([
     'driver.html',
-    'driver.js'
+    'driver.js',
+    'driver.css'
   ], "client");
+
+  api.use('autoupdate', 'server', {weak: true});
+  api.use('random', 'server');
+  api.addFiles('autoupdate.js', 'server');
+
+  api.export('runTests');
 });

@@ -1,131 +1,131 @@
-Meteor.http = Meteor.http || {};
+var path = require('path');
+var request = require('request');
+var url_util = require('url');
+var URL = require("meteor/url").URL;
+var common = require("./httpcall_common.js");
+var HTTP = exports.HTTP = common.HTTP;
+var hasOwn = Object.prototype.hasOwnProperty;
 
-(function() {
-
-  var path = __meteor_bootstrap__.require('path');
-  var request = __meteor_bootstrap__.require('request');
-  var url_util = __meteor_bootstrap__.require('url');
-  var Future = __meteor_bootstrap__.require(path.join('fibers', 'future'));
-
-
-  Meteor.http.call = function(method, url, options, callback) {
-
-    ////////// Process arguments //////////
-
-    if (! callback && typeof options === "function") {
-      // support (method, url, callback) argument list
-      callback = options;
-      options = null;
+exports.HTTPInternals = {
+  NpmModules: {
+    request: {
+      version: Npm.require('request/package.json').version,
+      module: request
     }
+  }
+};
 
-    options = options || {};
+// _call always runs asynchronously; HTTP.call, defined below,
+// wraps _call and runs synchronously when no callback is provided.
+function _call(method, url, options, callback) {
+  ////////// Process arguments //////////
 
-    method = (method || "").toUpperCase();
+  if (! callback && typeof options === "function") {
+    // support (method, url, callback) argument list
+    callback = options;
+    options = null;
+  }
 
-    if (! /^https?:\/\//.test(url))
-      throw new Error("url must be absolute and start with http:// or https://");
+  options = options || {};
 
-    var url_parts = url_util.parse(url);
+  if (hasOwn.call(options, 'beforeSend')) {
+    throw new Error("Option beforeSend not supported on server.");
+  }
 
-    var content = options.content;
-    if (options.data)
-      content = JSON.stringify(options.data);
+  method = (method || "").toUpperCase();
 
+  if (! /^https?:\/\//.test(url))
+    throw new Error("url must be absolute and start with http:// or https://");
 
-    var params_for_url, params_for_body;
-    if (content || method === "GET" || method === "HEAD")
-      params_for_url = options.params;
-    else
-      params_for_body = options.params;
+  var headers = {};
 
-    var new_url = Meteor.http._buildUrl(
-      url_parts.protocol+"//"+url_parts.host+url_parts.pathname,
-      url_parts.search, options.query, params_for_url);
-
-
-    var headers = {};
-
-    if (options.auth) {
-      if (options.auth.indexOf(':') < 0)
-        throw new Error('auth option should be of the form "username:password"');
-      headers['Authorization'] = "Basic "+
-        (new Buffer(options.auth, "ascii")).toString("base64");
-    }
-
-    if (params_for_body) {
-      content = Meteor.http._encodeParams(params_for_body);
-      headers['Content-Type'] = "application/x-www-form-urlencoded";
-    }
-
-    _.extend(headers, options.headers || {});
-
-    ////////// Callback wrapping //////////
-
-    var fut;
-    if (! callback) {
-      // Sync mode
-      fut = new Future;
-      callback = function(error, result) {
-        fut.ret(result);
-      };
-    } else {
-      // Async mode
-      // re-enter user code in a Fiber
-      callback = Meteor.bindEnvironment(callback, function(e) {
-        Meteor._debug("Exception in callback of Meteor.http.call", e.stack);
-      });
-    }
-
-    // wrap callback to always return a result object, and always
-    // have an 'error' property in result
-    callback = (function(callback) {
-      return function(error, result) {
-        result = result || {};
-        result.error = error;
-        callback(error, result);
-      };
-    })(callback);
-
-    // safety belt: only call the callback once.
-    callback = _.once(callback);
+  var content = options.content;
+  if (options.data) {
+    content = JSON.stringify(options.data);
+    headers['Content-Type'] = 'application/json';
+  }
 
 
-    ////////// Kickoff! //////////
+  var paramsForUrl, paramsForBody;
+  if (content || method === "GET" || method === "HEAD")
+    paramsForUrl = options.params;
+  else
+    paramsForBody = options.params;
 
-    var req_options = {
-      url: new_url,
-      method: method,
-      encoding: "utf8",
-      jar: false,
-      timeout: options.timeout,
-      body: content,
-      followRedirect: options.followRedirects,
-      headers: headers
-    };
+  var newUrl = URL._constructUrl(url, options.query, paramsForUrl);
 
-    request(req_options, function(error, res, body) {
-      var response = null;
+  if (options.auth) {
+    if (options.auth.indexOf(':') < 0)
+      throw new Error('auth option should be of the form "username:password"');
+    headers['Authorization'] = "Basic "+
+      Buffer.from(options.auth, "ascii").toString("base64");
+  }
 
-      if (! error) {
+  if (paramsForBody) {
+    content = URL._encodeParams(paramsForBody);
+    headers['Content-Type'] = "application/x-www-form-urlencoded";
+  }
 
-        response = {};
-        response.statusCode = res.statusCode;
-        response.content = body;
-        response.headers = res.headers;
-
-        Meteor.http._populateData(response);
-
-        if (res.statusCode >= 400)
-          error = new Error("failed");
-      }
-
-      callback(error, response);
-
+  if (options.headers) {
+    Object.keys(options.headers).forEach(function (key) {
+      headers[key] = options.headers[key];
     });
+  }
 
-    // If we're in sync mode, block and return the result.
-    if (fut)
-      return fut.wait();
-  };
+  // wrap callback to add a 'response' property on an error, in case
+  // we have both (http 4xx/5xx error, which has a response payload)
+  callback = (function(callback) {
+    var called = false;
+    return function(error, response) {
+      if (! called) {
+        called = true;
+        if (error && response) {
+          error.response = response;
+        }
+        callback(error, response);
+      }
+    };
+  })(callback);
 
-})();
+  ////////// Kickoff! //////////
+
+  // Allow users to override any request option with the npmRequestOptions
+  // option.
+  var reqOptions = Object.assign({
+    url: newUrl,
+    method: method,
+    encoding: "utf8",
+    jar: false,
+    timeout: options.timeout,
+    body: content,
+    followRedirect: options.followRedirects,
+    // Follow redirects on non-GET requests
+    // also. (https://github.com/meteor/meteor/issues/2808)
+    followAllRedirects: options.followRedirects,
+    headers: headers
+  }, options.npmRequestOptions || null);
+
+  request(reqOptions, function(error, res, body) {
+    var response = null;
+
+    if (! error) {
+      response = {};
+      response.statusCode = res.statusCode;
+      response.content = body;
+      response.headers = res.headers;
+
+      common.populateData(response);
+
+      if (response.statusCode >= 400) {
+        error = common.makeErrorByStatus(
+          response.statusCode,
+          response.content
+        );
+      }
+    }
+
+    callback(error, response);
+  });
+}
+
+HTTP.call = Meteor.wrapAsync(_call);

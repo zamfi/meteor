@@ -1,18 +1,39 @@
 Package.describe({
-  summary: "Make HTTP calls to remote servers"
+  summary: "Make HTTP calls to remote servers",
+  version: '1.4.1'
 });
 
-Package.on_use(function (api) {
-  api.add_files('httpcall_common.js', ['client', 'server']);
-  api.add_files('httpcall_client.js', 'client');
-  api.add_files('httpcall_server.js', 'server');
+Npm.depends({
+  request: "2.83.0"
 });
 
-Package.on_test(function (api) {
-  api.use('jquery', 'client');
+Package.onUse(function (api) {
+  api.use([
+    'url',
+    // This package intentionally does not depend on ecmascript, so that
+    // ecmascript and its dependencies can depend on http without creating
+    // package dependency cycles.
+    'modules'
+  ]);
+
+  api.mainModule('httpcall_client.js', 'client');
+  api.mainModule('httpcall_server.js', 'server');
+
+  api.export('HTTP');
+  api.export('HTTPInternals', 'server');
+});
+
+Package.onTest(function (api) {
+  api.use('ecmascript');
+  api.use('webapp', 'server');
+  api.use('underscore');
+  api.use('random');
   api.use('http', ['client', 'server']);
+  api.use('tinytest');
   api.use('test-helpers', ['client', 'server']);
 
-  api.add_files('test_responder.js', 'server');
-  api.add_files('httpcall_tests.js', ['client', 'server']);
+  api.addFiles('test_responder.js', 'server');
+  api.addFiles('httpcall_tests.js', ['client', 'server']);
+
+  api.addAssets('test_static.serveme', 'client');
 });

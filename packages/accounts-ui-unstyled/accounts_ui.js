@@ -1,16 +1,32 @@
-if (!Accounts.ui)
-  Accounts.ui = {};
+/**
+ * @summary Accounts UI
+ * @namespace
+ * @memberOf Accounts
+ * @importFromPackage accounts-base
+ */
+Accounts.ui = {};
 
-if (!Accounts.ui._options) {
-  Accounts.ui._options = {
-    requestPermissions: {}
-  };
-}
+Accounts.ui._options = {
+  requestPermissions: {},
+  requestOfflineToken: {},
+  forceApprovalPrompt: {}
+};
 
+// XXX refactor duplicated code in this function
 
+/**
+ * @summary Configure the behavior of [`{{> loginButtons}}`](#accountsui).
+ * @locus Client
+ * @param {Object} options
+ * @param {Object} options.requestPermissions Which [permissions](#requestpermissions) to request from the user for each external service.
+ * @param {Object} options.requestOfflineToken To ask the user for permission to act on their behalf when offline, map the relevant external service to `true`. Currently only supported with Google. See [Meteor.loginWithExternalService](#meteor_loginwithexternalservice) for more details.
+ * @param {Object} options.forceApprovalPrompt If true, forces the user to approve the app's permissions, even if previously approved. Currently only supported with Google.
+ * @param {String} options.passwordSignupFields Which fields to display in the user creation form. One of '`USERNAME_AND_EMAIL`', '`USERNAME_AND_OPTIONAL_EMAIL`', '`USERNAME_ONLY`', or '`EMAIL_ONLY`' (default).
+ * @importFromPackage accounts-base
+ */
 Accounts.ui.config = function(options) {
   // validate options keys
-  var VALID_KEYS = ['passwordSignupFields', 'requestPermissions'];
+  var VALID_KEYS = ['passwordSignupFields', 'requestPermissions', 'requestOfflineToken', 'forceApprovalPrompt'];
   _.each(_.keys(options), function (key) {
     if (!_.contains(VALID_KEYS, key))
       throw new Error("Accounts.ui.config: Invalid key: " + key);
@@ -45,9 +61,37 @@ Accounts.ui.config = function(options) {
       }
     });
   }
+
+  // deal with `requestOfflineToken`
+  if (options.requestOfflineToken) {
+    _.each(options.requestOfflineToken, function (value, service) {
+      if (service !== 'google')
+        throw new Error("Accounts.ui.config: `requestOfflineToken` only supported for Google login at the moment.");
+
+      if (Accounts.ui._options.requestOfflineToken[service]) {
+        throw new Error("Accounts.ui.config: Can't set `requestOfflineToken` more than once for " + service);
+      } else {
+        Accounts.ui._options.requestOfflineToken[service] = value;
+      }
+    });
+  }
+
+  // deal with `forceApprovalPrompt`
+  if (options.forceApprovalPrompt) {
+    _.each(options.forceApprovalPrompt, function (value, service) {
+      if (service !== 'google')
+        throw new Error("Accounts.ui.config: `forceApprovalPrompt` only supported for Google login at the moment.");
+
+      if (Accounts.ui._options.forceApprovalPrompt[service]) {
+        throw new Error("Accounts.ui.config: Can't set `forceApprovalPrompt` more than once for " + service);
+      } else {
+        Accounts.ui._options.forceApprovalPrompt[service] = value;
+      }
+    });
+  }
 };
 
-Accounts.ui._passwordSignupFields = function () {
+passwordSignupFields = function () {
   return Accounts.ui._options.passwordSignupFields || "EMAIL_ONLY";
 };
 

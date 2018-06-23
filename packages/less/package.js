@@ -1,40 +1,41 @@
 Package.describe({
-  summary: "The dynamic stylesheet language."
+  name: 'less',
+  version: '2.7.12',
+  summary: 'Leaner CSS language',
+  documentation: 'README.md'
 });
 
-var less = require('less');
-var fs = require('fs');
-
-Package.register_extension(
-  "less", function (bundle, source_path, serve_path, where) {
-    serve_path = serve_path + '.css';
-
-    var contents = fs.readFileSync(source_path);
-
-    try {
-      less.render(contents.toString('utf8'), function (err, css) {
-        // XXX why is this a callback? it's not async.
-        if (err) {
-          bundle.error(source_path + ": Less compiler error: " + err.message);
-          return;
-        }
-
-        bundle.add_resource({
-          type: "css",
-          path: serve_path,
-          data: new Buffer(css),
-          where: where
-        });
-      });
-    } catch (e) {
-      // less.render() is supposed to report any errors via its
-      // callback. But sometimes, it throws them instead. This is
-      // probably a bug in less. Be prepared for either behavior.
-      bundle.error(source_path + ": Less compiler error: " + e.message);
-    }
+Package.registerBuildPlugin({
+  name: "compileLessBatch",
+  use: ['caching-compiler', 'ecmascript', 'underscore'],
+  sources: [
+    'plugin/compile-less.js'
+  ],
+  npmDependencies: {
+    // Fork of 2.5.0, deleted large unused files in dist directory.
+    "less": "https://github.com/meteor/less.js/tarball/8130849eb3d7f0ecf0ca8d0af7c4207b0442e3f6"
   }
-);
+});
 
-Package.on_test(function (api) {
-  api.add_files(['less_tests.less', 'less_tests.js'], 'client');
+Package.onUse(function (api) {
+  api.use('isobuild:compiler-plugin@1.0.0');
+});
+
+Package.onTest(function(api) {
+  api.use('less');
+  api.use(['tinytest', 'test-helpers']);
+  api.addFiles(['tests/top.import.less',
+                'tests/top3.import.less',
+                'tests/dir/in-dir.import.less',
+                'tests/dir/in-dir2.import.less',
+                'tests/dir/root.less',
+                'tests/dir/subdir/in-subdir.import.less']);
+
+  api.addFiles('tests/imports/not-included.less', 'client', {
+    lazy: true
+  });
+
+  api.addFiles('tests/top2.less', 'client', {isImport: true});
+
+  api.addFiles('less_tests.js', 'client');
 });
